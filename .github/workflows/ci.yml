@@ -26,6 +26,8 @@ jobs:
         with:
           toolchain: stable
           default: true
+      - name: Setup cmake
+        uses: jwlawson/actions-setup-cmake@v1.13
       - name: Build wheels - universal2
         run: |
           rustup target add aarch64-apple-darwin
@@ -33,6 +35,7 @@ jobs:
           maturin build --release --universal2 --out dist
       - name: Install built wheel - universal2
         run: |
+          pip install numpy
           pip install fasttext-parallel --no-index --find-links dist --force-reinstall
       - name: Python UnitTest
         run: |
@@ -71,6 +74,7 @@ jobs:
           LIBCLANG_PATH: ${{ runner.temp }}/llvm-11.0/lib
       - name: Install built wheel and test
         run: |
+          pip install numpy
           pip install fasttext-parallel --no-index --find-links dist --force-reinstall
           python -m unittest discover -v test
       - name: Upload wheels
@@ -105,6 +109,7 @@ jobs:
       - name: Install built wheel and test
         if: matrix.target == 'x86_64'
         run: |
+          pip install numpy
           pip install fasttext-parallel --no-index --find-links dist --force-reinstall
           python -m unittest discover -v test
       - name: Upload wheels
@@ -138,6 +143,7 @@ jobs:
       - name: Install built wheel and test
         if: matrix.target == 'x86_64'
         run: |
+          pip install numpy
           pip install fasttext-parallel --no-index --find-links dist --force-reinstall
           python -m unittest discover -v test
       - name: Upload wheels
@@ -179,6 +185,7 @@ jobs:
             apt-get install -y --no-install-recommends python3 python3-pip
             pip3 install -U pip
           run: |
+            pip3 install numpy
             pip3 install fasttext-parallel --no-index --find-links dist --force-reinstall
             python3 -m unittest discover -v test
       - name: Upload wheels

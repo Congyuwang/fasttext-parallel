@@ -36,7 +36,7 @@ jobs:
       - name: Install built wheel - universal2
         run: |
           pip install numpy
-          pip install fasttext-parallel --no-index --find-links dist --force-reinstall
+          pip install fasttext-parallel --no-index --find-links dist --force-reinstall --no-dependencies
       - name: Python UnitTest
         run: |
           python -m unittest discover -v test
@@ -75,7 +75,7 @@ jobs:
       - name: Install built wheel and test
         run: |
           pip install numpy
-          pip install fasttext-parallel --no-index --find-links dist --force-reinstall
+          pip install fasttext-parallel --no-index --find-links dist --force-reinstall --no-dependencies
           python -m unittest discover -v test
       - name: Upload wheels
         uses: actions/upload-artifact@v2
@@ -110,7 +110,7 @@ jobs:
         if: matrix.target == 'x86_64'
         run: |
           pip install numpy
-          pip install fasttext-parallel --no-index --find-links dist --force-reinstall
+          pip install fasttext-parallel --no-index --find-links dist --force-reinstall --no-dependencies
           python -m unittest discover -v test
       - name: Upload wheels
         uses: actions/upload-artifact@v2
@@ -144,7 +144,7 @@ jobs:
         if: matrix.target == 'x86_64'
         run: |
           pip install numpy
-          pip install fasttext-parallel --no-index --find-links dist --force-reinstall
+          pip install fasttext-parallel --no-index --find-links dist --force-reinstall --no-dependencies
           python -m unittest discover -v test
       - name: Upload wheels
         uses: actions/upload-artifact@v2
@@ -187,7 +187,7 @@ jobs:
             pip3 install -U pip
           run: |
             pip3 install numpy
-            pip3 install fasttext-parallel --no-index --find-links dist --force-reinstall
+            pip3 install fasttext-parallel --no-index --find-links dist --force-reinstall --no-dependencies
             python3 -m unittest discover -v test
       - name: Upload wheels
         uses: actions/upload-artifact@v2

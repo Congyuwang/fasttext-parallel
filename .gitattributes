@@ -1,0 +1,2 @@
+data/train.csv filter=lfs diff=lfs merge=lfs -text
+model/lid.176.bin filter=lfs diff=lfs merge=lfs -text

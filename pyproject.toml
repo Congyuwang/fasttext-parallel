@@ -1,0 +1,28 @@
+[project]
+name = "fasttext-parallel"
+version = "0.1.1"
+description = "FastText Multithreading Inference"
+long_description_content_type="text/markdown"
+readme = "README.md"
+keywords = ["fasttext"]
+
+classifiers=[
+    "Programming Language :: Rust",
+    "License :: OSI Approved :: MIT License",
+    'Operating System :: MacOS :: MacOS X',
+    'Operating System :: Microsoft :: Windows',
+    'Operating System :: POSIX :: Linux',
+    'Programming Language :: Python :: 3.7',
+    'Programming Language :: Python :: 3.8',
+    'Programming Language :: Python :: 3.9',
+    'Programming Language :: Python :: 3.10',
+    'Programming Language :: Python :: 3.11',
+]
+
+dependencies=[
+    "numpy >= 1.20.0"
+]
+
+[build-system]
+requires = ["maturin>=0.13,<0.14"]
+build-backend = "maturin"

@@ -24,10 +24,6 @@ jobs:
         with:
           toolchain: stable
           default: true
-      - name: Setup cmake
-        uses: jwlawson/actions-setup-cmake@v1.13
-        with:
-          cmake-version: latest
       - name: Build wheels - universal2
         run: |
           rustup target add aarch64-apple-darwin

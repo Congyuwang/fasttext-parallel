@@ -151,6 +151,7 @@ dependencies = [
  "fasttext",
  "log",
  "ndarray",
+ "num_cpus",
  "numpy",
  "pyo3",
  "pyo3-log",

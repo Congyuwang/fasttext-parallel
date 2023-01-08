@@ -7,9 +7,11 @@ use pyo3::exceptions::PyException;
 use pyo3::prelude::*;
 use pyo3::types::{IntoPyDict, PyDict, PyList, PyString};
 use rayon::prelude::*;
+use std::cmp::max;
 use std::collections::BTreeMap;
 
 const CHANNEL_SIZE: usize = 128;
+const MIN_THREADS: usize = 3;
 
 #[pyclass(name = "FastText")]
 struct FastTextPy {
@@ -193,6 +195,10 @@ impl FastTextPy {
 #[pymodule]
 fn fasttext_parallel(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     pyo3_log::init();
+    rayon::ThreadPoolBuilder::new()
+        .num_threads(max(MIN_THREADS, num_cpus::get()))
+        .build_global()
+        .map_err(|e| PyException::new_err(format!("failed to initialize rayon crate, {e}")))?;
     m.add_function(wrap_pyfunction!(load_model, m)?)?;
     m.add_class::<FastTextPy>()?;
     Ok(())

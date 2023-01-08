@@ -5,16 +5,17 @@ use ndarray::{Array2, Ix2};
 use numpy::ToPyArray;
 use pyo3::exceptions::PyException;
 use pyo3::prelude::*;
-use pyo3::types::{PyDict, PyList, PyString};
+use pyo3::types::{IntoPyDict, PyDict, PyList, PyString};
 use rayon::prelude::*;
 use std::collections::BTreeMap;
 
 const CHANNEL_SIZE: usize = 128;
 
 #[pyclass(name = "FastText")]
-struct FastTextPy{
+struct FastTextPy {
     model: FastText,
     label_dict: BTreeMap<String, i16>,
+    reverse_label_dict: BTreeMap<i16, String>,
 }
 
 /// load model from path.
@@ -23,17 +24,29 @@ struct FastTextPy{
 ///     path: file path of the model
 ///     label_to_int: a mapping from fasttext label to a positive i16
 #[pyfunction]
-#[pyo3(text_signature = "(path, label_to_int)")]
-fn load_model(path: &str, label_to_int: &PyDict) -> PyResult<FastTextPy> {
+#[pyo3(text_signature = "(path)")]
+fn load_model(path: &str) -> PyResult<FastTextPy> {
     let mut model = FastText::new();
-    let label_dict: BTreeMap<String, i16> = label_to_int.extract()?;
     if let Err(e) = model.load_model(path) {
         Err(PyException::new_err(e))
     } else {
         debug!("model loaded");
-        Ok(FastTextPy{
+        let labels = model.get_labels();
+        let label_dict: BTreeMap<String, i16> = labels
+            .iter()
+            .into_iter()
+            .enumerate()
+            .map(|(i, lab)| (lab.clone(), i as i16))
+            .collect();
+        let reverse_label_dict: BTreeMap<i16, String> = labels
+            .into_iter()
+            .enumerate()
+            .map(|(i, lab)| (i as i16, lab))
+            .collect();
+        Ok(FastTextPy {
             model,
             label_dict,
+            reverse_label_dict,
         })
     }
 }
@@ -148,6 +161,27 @@ impl FastTextPy {
         let labels = Python::with_gil(|py| labels.to_pyarray(py).to_object(py));
         let probs = Python::with_gil(|py| probs.to_pyarray(py).to_object(py));
         Ok((labels, probs))
+    }
+
+    /// get the mapping from label index to label.
+    ///
+    /// Returns:
+    ///     A dictionary mapping from integer to labels.
+    #[pyo3(text_signature = "($self)")]
+    fn get_labels<'a>(&self, py: Python<'a>) -> &'a PyDict {
+        self.reverse_label_dict.clone().into_py_dict(py)
+    }
+
+    /// get a label by the id
+    ///
+    /// Args:
+    ///     id: the id of a label
+    ///
+    /// Returns:
+    ///     the label corresponding to the given id.
+    #[pyo3(text_signature = "($self, id)")]
+    fn get_label_by_id(&self, id: i16) -> Option<&String> {
+        self.reverse_label_dict.get(&id)
     }
 }
 

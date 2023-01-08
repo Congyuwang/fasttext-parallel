@@ -40,8 +40,7 @@ checksum = "a20104e2335ce8a659d6dd92a51a767a0c062599c73b343fd152cb401e828c3d"
 [[package]]
 name = "cfasttext-sys"
 version = "0.7.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "172e36a703975f4cf9b0a046d0bd76dc8946e31b540a902c72421aaab941bc65"
+source = "git+https://github.com/Congyuwang/fasttext-rs?branch=load_label_congyu#f799a2555dad3a01220217a26ba0f33893323b95"
 dependencies = [
  "cmake",
 ]
@@ -137,8 +136,7 @@ checksum = "90e5c1c8368803113bf0c9584fc495a58b86dc8a29edbf8fe877d21d9507e797"
 [[package]]
 name = "fasttext"
 version = "0.7.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a4c85328c189d66f1e1280e3d41333a535fa677c802b23f7ceb442815f19ee7b"
+source = "git+https://github.com/Congyuwang/fasttext-rs?branch=load_label_congyu#f799a2555dad3a01220217a26ba0f33893323b95"
 dependencies = [
  "cfasttext-sys",
 ]

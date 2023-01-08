@@ -33,9 +33,7 @@ fn load_model(path: &str) -> PyResult<FastTextPy> {
         debug!("model loaded");
         let labels = match model.get_labels() {
             Ok((labels, _)) => labels,
-            Err(e) => {
-                return Err(PyException::new_err(e))
-            }
+            Err(e) => return Err(PyException::new_err(e)),
         };
         let label_dict: BTreeMap<String, i16> = labels
             .iter()
@@ -83,9 +81,9 @@ impl FastTextPy {
         let (text_sender, text_receiver) = bounded::<Option<String>>(CHANNEL_SIZE);
         let (result_sender, result_receiver) = bounded(CHANNEL_SIZE);
         py.allow_threads(|| {
-            std::thread::scope(|s| {
+            rayon::scope(|s| {
                 // text sender
-                s.spawn(|| {
+                s.spawn(|_| {
                     Python::with_gil(|py| {
                         let texts_iter =
                             texts.as_ref(py)
@@ -95,7 +93,7 @@ impl FastTextPy {
                                 .map(|s| {
                                     s.downcast::<PyString>()
                                         .ok()
-                                        .map(|s| match s.to_str() {
+                                        .and_then(|s| match s.to_str() {
                                             Ok(s) => Some(s.to_string()),
                                             Err(e) => {
                                                 py.allow_threads(|| {
@@ -104,13 +102,13 @@ impl FastTextPy {
                                                 None
                                             }
                                         })
-                                        .flatten()
                                 });
                         for text in texts_iter {
-                            if py.allow_threads(|| {
+                            let send_result = py.allow_threads(|| {
                                 debug!("text sent: {:?}", text);
-                                 text_sender.send(text)
-                            }).is_err() {
+                                text_sender.send(text)
+                            });
+                            if send_result.is_err() {
                                 break;
                             };
                         }
@@ -118,8 +116,9 @@ impl FastTextPy {
                     });
                     debug!("text sender thread finished");
                 });
+
                 // processor
-                s.spawn(|| {
+                s.spawn(|_| {
                     text_receiver
                         .iter()
                         .enumerate()
@@ -151,8 +150,9 @@ impl FastTextPy {
                     drop(result_sender);
                     debug!("processor thread finished");
                 });
+
                 // result writer
-                s.spawn(|| {
+                s.spawn(|_| {
                     for (i, result) in result_receiver {
                         debug!("result {i} received");
                         let mut label = labels.row_mut(i);

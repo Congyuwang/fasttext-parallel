@@ -6,6 +6,19 @@ An easy to use tool for multithreading fasttext batch inference.
 - Fast inference using multithreading utilizing all cpu cores.
 - Predicted labels are encoded as i16 numpy array for small memory footprint and easy serialization.
 
+## Performance
+
+On macbook Air M2 chip, the performance is about 4 times faster,
+which is reasonable since it has 4 performance cores.
+
+```
+❯ python -m unittest discover test
+fasttext 1.7130832079565153
+fasttext-parallel 6.7440170829650015
+```
+
+## Usage
+
 ```
 pip install fasttext-parallel
 ```

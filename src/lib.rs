@@ -31,7 +31,12 @@ fn load_model(path: &str) -> PyResult<FastTextPy> {
         Err(PyException::new_err(e))
     } else {
         debug!("model loaded");
-        let labels = model.get_labels();
+        let labels = match model.get_labels() {
+            Ok((labels, _)) => labels,
+            Err(e) => {
+                return Err(PyException::new_err(e))
+            }
+        };
         let label_dict: BTreeMap<String, i16> = labels
             .iter()
             .into_iter()

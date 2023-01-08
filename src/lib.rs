@@ -9,6 +9,7 @@ use pyo3::types::{IntoPyDict, PyDict, PyList, PyString};
 use rayon::prelude::*;
 use std::cmp::max;
 use std::collections::BTreeMap;
+use std::thread::available_parallelism;
 
 const CHANNEL_SIZE: usize = 128;
 const MIN_THREADS: usize = 3;
@@ -209,8 +210,10 @@ fn predict_test(
 #[pymodule]
 fn fasttext_parallel(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     pyo3_log::init();
+    let num_parallelism = available_parallelism()
+        .map_err(|e| PyException::new_err(format!("failed to initialize rayon crate, {e}")))?;
     rayon::ThreadPoolBuilder::new()
-        .num_threads(max(MIN_THREADS, num_cpus::get()))
+        .num_threads(max(MIN_THREADS, num_parallelism.get()))
         .build_global()
         .map_err(|e| PyException::new_err(format!("failed to initialize rayon crate, {e}")))?;
     m.add_function(wrap_pyfunction!(load_model, m)?)?;

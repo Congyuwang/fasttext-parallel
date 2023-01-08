@@ -4,7 +4,6 @@ import fasttext_parallel as ft
 import fasttext as ft_ref
 import logging
 import csv
-from fasttext_labels import FASTTEXT_TO_BYTE
 
 logging.basicConfig(level=logging.ERROR)
 ft_ref.FastText.eprint = lambda x: None
@@ -22,8 +21,14 @@ def text_iter():
 
 
 class TestFastText(unittest.TestCase):
-    model = ft.load_model(MODEL_PATH, FASTTEXT_TO_BYTE)
+    model = ft.load_model(MODEL_PATH)
     model_ref = ft_ref.load_model(MODEL_PATH)
+
+    def test_get_labels(self):
+        self.assertSetEqual(
+            set(self.model.get_labels().values()),
+            set(self.model_ref.get_labels())
+        )
 
     def test_simple(self):
         k = 2
@@ -32,7 +37,7 @@ class TestFastText(unittest.TestCase):
         labels_ref, probs_ref = self.model_ref.predict(test_text, k=k)
         for j in range(k):
             for i in range(len(labels)):
-                self.assertEqual(labels[i][j], FASTTEXT_TO_BYTE[labels_ref[i][j]])
+                self.assertEqual(self.model.get_label_by_id(labels[i][j]), labels_ref[i][j])
                 self.assertAlmostEqual(probs[i][j], probs_ref[i][j], 1)
 
     def test_benchmark(self):

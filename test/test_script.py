@@ -11,7 +11,7 @@ ft_ref.FastText.eprint = lambda x: None
 MODEL_PATH = "./model/lid.176.bin"
 
 
-def text_iter() -> list[str]:
+def text_iter():
     texts = []
     with open("./data/train.csv", "r") as f:
         reader = csv.reader(f)

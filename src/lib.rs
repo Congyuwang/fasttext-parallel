@@ -1,4 +1,4 @@
-use crossbeam::channel::bounded;
+use crossbeam::channel::{bounded, Receiver, Sender};
 use fasttext::FastText;
 use log::{debug, error};
 use ndarray::{Array2, Ix2};
@@ -9,6 +9,7 @@ use pyo3::types::{IntoPyDict, PyDict, PyList, PyString};
 use rayon::prelude::*;
 use std::cmp::max;
 use std::collections::BTreeMap;
+use std::thread::available_parallelism;
 
 const CHANNEL_SIZE: usize = 128;
 const MIN_THREADS: usize = 3;
@@ -87,69 +88,15 @@ impl FastTextPy {
                 // text sender
                 s.spawn(|_| {
                     Python::with_gil(|py| {
-                        let texts_iter =
-                            texts.as_ref(py)
-                                .downcast::<PyList>()
-                                .unwrap()
-                                .iter()
-                                .map(|s| {
-                                    s.downcast::<PyString>()
-                                        .ok()
-                                        .and_then(|s| match s.to_str() {
-                                            Ok(s) => Some(s.to_string()),
-                                            Err(e) => {
-                                                py.allow_threads(|| {
-                                                    error!("Non-string element encountered in input, ignoring: {e}");
-                                                });
-                                                None
-                                            }
-                                        })
-                                });
-                        for text in texts_iter {
-                            let send_result = py.allow_threads(|| {
-                                debug!("text sent: {:?}", text);
-                                text_sender.send(text)
-                            });
-                            if send_result.is_err() {
-                                break;
-                            };
-                        }
-                        drop(text_sender);
+                        let texts = texts.as_ref(py).downcast::<PyList>().unwrap();
+                        send_text(texts, text_sender, py);
                     });
                     debug!("text sender thread finished");
                 });
 
                 // processor
                 s.spawn(|_| {
-                    text_receiver
-                        .iter()
-                        .enumerate()
-                        .par_bridge()
-                        .map(|(i, s)| {
-                            let result = if let Some(s) = s {
-                                debug!("text received: {:?}", s);
-                                match self.model.predict(&s, k, threshold) {
-                                    Ok(predictions) => predictions
-                                        .into_iter()
-                                        .map(|p| (*self.label_dict.get(&p.label).unwrap_or(&-1), p.prob))
-                                        .unzip(),
-                                    Err(e) => {
-                                        error!("Error making prediction, ignoring: {e}");
-                                        (vec![], vec![])
-                                    }
-                                }
-                            } else {
-                                (vec![], vec![])
-                            };
-                            if result_sender.send((i, result)).is_err() {
-                                None
-                            } else {
-                                Some(())
-                            }
-                        })
-                        .while_some()
-                        .for_each(|_| {});
-                    drop(result_sender);
+                    predict_test(self, text_receiver, result_sender, k, threshold);
                     debug!("processor thread finished");
                 });
 
@@ -192,11 +139,81 @@ impl FastTextPy {
     }
 }
 
+#[inline]
+fn send_text(texts: &PyList, text_sender: Sender<Option<String>>, py: Python) {
+    let texts_iter = texts.iter().map(|s| {
+        s.downcast::<PyString>()
+            .ok()
+            .and_then(|s| match s.to_str() {
+                Ok(s) => Some(s.to_string()),
+                Err(e) => {
+                    py.allow_threads(|| {
+                        error!("Non-string element encountered in input, ignoring: {e}");
+                    });
+                    None
+                }
+            })
+    });
+    for text in texts_iter {
+        let send_result = py.allow_threads(|| {
+            debug!("text sent: {:?}", text);
+            text_sender.send(text)
+        });
+        if send_result.is_err() {
+            break;
+        };
+    }
+    drop(text_sender);
+}
+
+type ResultSender = Sender<(usize, (Vec<i16>, Vec<f32>))>;
+
+#[inline]
+fn predict_test(
+    model: &FastTextPy,
+    text_receiver: Receiver<Option<String>>,
+    result_sender: ResultSender,
+    k: i32,
+    threshold: f32,
+) {
+    text_receiver
+        .iter()
+        .enumerate()
+        .par_bridge()
+        .map(|(i, s)| {
+            let result = if let Some(s) = s {
+                debug!("text received: {:?}", s);
+                match model.model.predict(&s, k, threshold) {
+                    Ok(predictions) => predictions
+                        .into_iter()
+                        .map(|p| (model.label_dict.get(&p.label).unwrap_or(&-1), p.prob))
+                        .unzip(),
+                    Err(e) => {
+                        error!("Error making prediction, ignoring: {e}");
+                        (vec![], vec![])
+                    }
+                }
+            } else {
+                (vec![], vec![])
+            };
+            if result_sender.send((i, result)).is_err() {
+                None
+            } else {
+                Some(())
+            }
+        })
+        .while_some()
+        .for_each(|_| {});
+    drop(result_sender);
+}
+
 #[pymodule]
 fn fasttext_parallel(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     pyo3_log::init();
+    let num_parallelism = available_parallelism()
+        .map_err(|e| PyException::new_err(format!("failed to initialize rayon crate, {e}")))?;
     rayon::ThreadPoolBuilder::new()
-        .num_threads(max(MIN_THREADS, num_cpus::get()))
+        .num_threads(max(MIN_THREADS, num_parallelism.get()))
         .build_global()
         .map_err(|e| PyException::new_err(format!("failed to initialize rayon crate, {e}")))?;
     m.add_function(wrap_pyfunction!(load_model, m)?)?;

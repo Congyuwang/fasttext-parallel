@@ -25,7 +25,6 @@ log = "0.4.17"
 pyo3-log = "0.7.0"
 numpy = "0.17.2"
 ndarray = { version = "0.15" }
-num_cpus = "1.15.0"
 crossbeam = "0.8.2"
 
 [package.metadata.maturin]

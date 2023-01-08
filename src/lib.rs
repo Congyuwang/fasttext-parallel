@@ -12,18 +12,29 @@ use std::collections::BTreeMap;
 const CHANNEL_SIZE: usize = 128;
 
 #[pyclass(name = "FastText")]
-struct FastTextPy(FastText);
+struct FastTextPy{
+    model: FastText,
+    label_dict: BTreeMap<String, i16>,
+}
 
 /// load model from path.
+///
+/// Args:
+///     path: file path of the model
+///     label_to_int: a mapping from fasttext label to a positive i16
 #[pyfunction]
-#[pyo3(text_signature = "(path)")]
-fn load_model(path: &str) -> PyResult<FastTextPy> {
+#[pyo3(text_signature = "(path, label_to_int)")]
+fn load_model(path: &str, label_to_int: &PyDict) -> PyResult<FastTextPy> {
     let mut model = FastText::new();
+    let label_dict: BTreeMap<String, i16> = label_to_int.extract()?;
     if let Err(e) = model.load_model(path) {
         Err(PyException::new_err(e))
     } else {
         debug!("model loaded");
-        Ok(FastTextPy(model))
+        Ok(FastTextPy{
+            model,
+            label_dict,
+        })
     }
 }
 
@@ -33,25 +44,22 @@ impl FastTextPy {
     ///
     /// Args:
     ///     texts: a list of strings
-    ///     label_to_int: a mapping from fasttext label to a positive i16
     ///     k: output k predictions per text
     ///     threshold: the minimal accuracy
     ///
     /// Returns:
     ///     A label, probability pairs in np.ndarray(i16) and np.ndarray(f32)
     ///     format. Where `-1` is used to represent label not found in label_to_int
-    #[pyo3(text_signature = "($self, texts, label_to_int, k, threshold)")]
+    #[pyo3(text_signature = "($self, texts, k, threshold)")]
     #[args(k = "1", threshold = "-1.0")]
     fn batch(
         &self,
         texts: PyObject,
-        label_to_int: &PyDict,
         k: i32,
         threshold: f32,
         py: Python,
     ) -> PyResult<(PyObject, PyObject)> {
         let counts = texts.as_ref(py).downcast::<PyList>()?.len();
-        let label_dict: BTreeMap<String, i16> = label_to_int.extract()?;
         let mut labels = Array2::<i16>::default(Ix2(counts, k as usize));
         let mut probs = Array2::<f32>::default(Ix2(counts, k as usize));
         let (text_sender, text_receiver) = bounded::<Option<String>>(CHANNEL_SIZE);
@@ -101,10 +109,10 @@ impl FastTextPy {
                         .map(|(i, s)| {
                             let result = if let Some(s) = s {
                                 debug!("text received: {:?}", s);
-                                match self.0.predict(&s, k, threshold) {
+                                match self.model.predict(&s, k, threshold) {
                                     Ok(predictions) => predictions
                                         .into_iter()
-                                        .map(|p| (*label_dict.get(&p.label).unwrap_or(&-1), p.prob))
+                                        .map(|p| (*self.label_dict.get(&p.label).unwrap_or(&-1), p.prob))
                                         .unzip(),
                                     Err(e) => {
                                         error!("Error making prediction, ignoring: {e}");

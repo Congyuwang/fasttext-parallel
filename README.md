@@ -7,8 +7,6 @@ pip install fasttext-parallel
 ```python
 import fasttext_parallel as ft
 
-model = ft.load_model("./model/lid.176.bin")
-
 """
 This file defines language labels used by fasttext.
 
@@ -194,7 +192,8 @@ FASTTEXT_LABELS = [
     "__label__zh",
 ]
 
-FASTTEXT_TO_BYTE = {lab: i for i, lab in enumerate(FASTTEXT_LABELS)}
+LABEL_TO_INT = {lab: i for i, lab in enumerate(FASTTEXT_LABELS)}
 
-result = model.batch(["你好", "how are you"], FASTTEXT_TO_BYTE)
+model = ft.load_model("./model/lid.176.bin", LABEL_TO_INT)
+result = model.batch(["你好", "how are you"])
 ```

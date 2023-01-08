@@ -20,7 +20,12 @@ classifiers=[
 ]
 
 dependencies=[
-    "numpy >= 1.20.0"
+    'numpy >= 1.20.0'
+]
+
+[project.optional-dependencies]
+tests = [
+    'fasttext'
 ]
 
 [build-system]

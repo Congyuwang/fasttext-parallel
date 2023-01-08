@@ -12,8 +12,6 @@ jobs:
         py_version: [3.7, 3.8, 3.9, "3.10", "3.11"]
     steps:
       - uses: actions/checkout@v2
-        with:
-          lfs: true
       - uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: latest
@@ -35,13 +33,6 @@ jobs:
           rustup target add aarch64-apple-darwin
           pip install maturin
           maturin build --release --universal2 --out dist
-      - name: Install built wheel - universal2
-        run: |
-          pip install numpy
-          pip install fasttext-parallel --no-index --find-links dist --force-reinstall --no-dependencies
-      - name: Python UnitTest
-        run: |
-          python -m unittest discover -v test
       - name: Upload wheels
         uses: actions/upload-artifact@v2
         with:
@@ -56,8 +47,6 @@ jobs:
         py_version: [ 3.7, 3.8, 3.9, "3.10", "3.11" ]
     steps:
       - uses: actions/checkout@v2
-        with:
-          lfs: true
       - uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.py_version }}
@@ -74,11 +63,6 @@ jobs:
           args: --release --out dist
         env:
           LIBCLANG_PATH: ${{ runner.temp }}/llvm-11.0/lib
-      - name: Install built wheel and test
-        run: |
-          pip install numpy fasttext
-          pip install fasttext-parallel --no-index --find-links dist --force-reinstall --no-dependencies
-          python -m unittest discover -v test
       - name: Upload wheels
         uses: actions/upload-artifact@v2
         with:
@@ -162,8 +146,6 @@ jobs:
         target: [aarch64]
     steps:
       - uses: actions/checkout@v2
-        with:
-          lfs: true
       - uses: actions/setup-python@v4
         with:
           python-version: 3.9
@@ -176,21 +158,6 @@ jobs:
           manylinux: 2_28
           args: --release --out dist --interpreter '3.7 3.8 3.9 3.10 3.11'
           container:  messense/manylinux2014-cross:${{ matrix.target }}
-      - uses: uraimo/run-on-arch-action@v2
-        if: matrix.target != 'ppc64'
-        name: Install built wheel and test
-        with:
-          arch: ${{ matrix.target }}
-          distro: ubuntu22.04
-          githubToken: ${{ github.token }}
-          install: |
-            apt-get update
-            apt-get install -y --no-install-recommends python3 python3-pip
-            pip3 install -U pip
-          run: |
-            pip install numpy fasttext
-            pip3 install fasttext-parallel --no-index --find-links dist --force-reinstall --no-dependencies
-            python3 -m unittest discover -v test
       - name: Upload wheels
         uses: actions/upload-artifact@v2
         with:

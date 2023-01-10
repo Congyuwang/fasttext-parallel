@@ -13,8 +13,8 @@ which is reasonable since it has 4 performance cores.
 
 ```
 ❯ python -m unittest discover test
-fasttext 1.7130832079565153
-fasttext-parallel 6.7440170829650015
+fasttext-parallel 1.7130832079565153s
+fasttext          6.7440170829650015s
 ```
 
 ## Usage

@@ -18,14 +18,11 @@ name = "fasttext_parallel"
 crate-type = ["cdylib"]
 
 [dependencies]
-pyo3 = { version = "0.17.3", features = ["extension-module"] }
+pyo3 = { version = "0.18", features = ["extension-module"] }
 fasttext = "0.7.2"
 rayon = "1.6.1"
 log = "0.4.17"
-pyo3-log = "0.7.0"
-numpy = "0.17.2"
+pyo3-log = "0.8"
+numpy = "0.18"
 ndarray = { version = "0.15" }
 crossbeam = "0.8.2"
-
-[package.metadata.maturin]
-python-source = "python"

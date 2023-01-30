@@ -27,7 +27,6 @@ struct FastTextPy {
 ///     path: file path of the model
 ///     label_to_int: a mapping from fasttext label to a positive i16
 #[pyfunction]
-#[pyo3(text_signature = "(path)")]
 fn load_model(path: &str) -> PyResult<FastTextPy> {
     let mut model = FastText::new();
     if let Err(e) = model.load_model(path) {
@@ -69,8 +68,7 @@ impl FastTextPy {
     /// Returns:
     ///     A label, probability pairs in np.ndarray(i16) and np.ndarray(f32)
     ///     format. Where `-1` is used to represent label not found in label_to_int
-    #[pyo3(text_signature = "($self, texts, k, threshold)")]
-    #[args(k = "1", threshold = "-1.0")]
+    #[pyo3(signature = (texts, k=1, threshold=-1.0))]
     fn batch(
         &self,
         texts: PyObject,
@@ -121,7 +119,6 @@ impl FastTextPy {
     ///
     /// Returns:
     ///     A dictionary mapping from integer to labels.
-    #[pyo3(text_signature = "($self)")]
     fn get_labels<'a>(&self, py: Python<'a>) -> &'a PyDict {
         self.reverse_label_dict.clone().into_py_dict(py)
     }
@@ -133,7 +130,6 @@ impl FastTextPy {
     ///
     /// Returns:
     ///     the label corresponding to the given id.
-    #[pyo3(text_signature = "($self, id)")]
     fn get_label_by_id(&self, id: i16) -> Option<&String> {
         self.reverse_label_dict.get(&id)
     }

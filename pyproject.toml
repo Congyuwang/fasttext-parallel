@@ -1,6 +1,6 @@
 [project]
 name = "fasttext-parallel"
-version = "0.1.3"
+version = "0.1.4"
 description = "FastText Multithreading Inference"
 long_description_content_type="text/markdown"
 readme = "README.md"
@@ -31,3 +31,6 @@ tests = [
 [build-system]
 requires = ["maturin>=0.13,<0.14"]
 build-backend = "maturin"
+
+[tool.maturin]
+python-source = "python"
